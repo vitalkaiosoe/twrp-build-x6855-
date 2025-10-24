@@ -1,0 +1,37 @@
+name: Build TWRP X6855
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Проверка репозитория
+      uses: actions/checkout@v3
+
+    - name: Установка зависимостей
+      run: |
+        sudo apt update
+        sudo apt install git-core curl bc bison flex build-essential zip python3 openjdk-11-jdk ccache wget -y
+
+    - name: Загрузка исходников TWRP
+      run: |
+        git clone https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git twrp --depth=1 -b twrp-12.1
+        cd twrp
+        mkdir -p device/infinix/Infinix-X6855
+        cp -r ../device/infinix/Infinix-X6855/* device/infinix/Infinix-X6855/
+
+    - name: Сборка recovery
+      run: |
+        cd twrp
+        source build/envsetup.sh || true
+        lunch omni_X6855-eng || true
+        make recoveryimage -j$(nproc)
+
+    - name: Сохранение результата
+      uses: actions/upload-artifact@v4
+      with:
+        name: recovery-img
+        path: twrp/out/target/product/X6855/recovery.img
